@@ -16,8 +16,10 @@ class CPU:
         self.pc = 0
         # This will hold out 8 general purpose registers
         self.reg = [0]*8
-        # init the SP
+        # init the stack pointer
         self.reg[7] = 0xF4
+
+        self.flag = 0
 
     def load(self):
         """Load a program into memory."""
@@ -64,6 +66,14 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         # elif op == "SUB": etc
+        elif op == "CMP":
+            if reg_a == reg_b:
+                self.flag = 0b00000001
+            elif reg_a < reg_b:
+                self.flag = 0b00000100
+            elif reg_a > reg_b:
+                self.flag = 0b00000010
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -120,6 +130,9 @@ class CPU:
             if command == 0b10100010:  # multiplies the numbers of the indexes of the next 2 lines
                 self.reg[operand1] *= self.reg[operand2]
 
+            if command == 0b10100000:  # sum
+                self.reg[operand1] += self.reg[operand2]
+
             if command == 0b01000101:  # Push
                 self.reg[7] -= 1  # decrement stack pointer
                 self.reg[7] &= 0xff
@@ -142,6 +155,21 @@ class CPU:
 
                 self.reg[7] += 1
 
-            self.pc += command >> 6
+            # self.pc += command >> 6
 
-            self.pc += 1
+            # self.pc += 1
+
+            if command == 0b01010000:  # Call
+                self.reg[7] -= 1
+                sp = self.reg[7]
+                self.ram[sp] = self.pc+1
+                self.pc = self.reg[operand1]
+
+            if command == 0b00010001:  # RET
+                sp = self.reg[7]
+                self.reg[7] += 1
+                self.pc = self.ram[sp]
+
+            if command != 0b01010000 and command != 0b01010100 and command != 0b01010101 and command != 0b01010110:
+                self.pc += command >> 6
+                self.pc += 1
