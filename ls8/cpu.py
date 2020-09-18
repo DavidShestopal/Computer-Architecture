@@ -159,17 +159,44 @@ class CPU:
 
             # self.pc += 1
 
+            if command != 0b01010000 and command != 0b01010100 and command != 0b01010101 and command != 0b01010110:
+                self.pc += command >> 6
+                self.pc += 1
+
             if command == 0b01010000:  # Call
+                # Calls a subroutine (function) at the address stored in the register.
                 self.reg[7] -= 1
                 sp = self.reg[7]
                 self.ram[sp] = self.pc+1
                 self.pc = self.reg[operand1]
 
             if command == 0b00010001:  # RET
+                # returns from subroutine
                 sp = self.reg[7]
                 self.reg[7] += 1
                 self.pc = self.ram[sp]
 
-            if command != 0b01010000 and command != 0b01010100 and command != 0b01010101 and command != 0b01010110:
-                self.pc += command >> 6
-                self.pc += 1
+            if command == 0b10100111:  # CMP
+
+                # call alu function to handle the arithmetic
+                self.alu("CMP", self.reg[operand1], self.reg[operand2])
+
+            if command == 0b01010100:  # JMP
+                # set the pc to the address stored in the given register
+                self.pc = self.reg[operand1]
+
+            if command == 0b01010101:  # JEQ
+                # if equal flag we jump to the address stored in the given register
+                if self.flag == 0b00000001:
+                    self.pc = self.reg[operand1]
+                    # else we increment by 2
+                else:
+                    self.pc += 2
+
+            if command == 0b01010110:  # JNE
+                # if the flag is E we jump to the address stored in the given register
+                if self.flag != 0b00000001:
+                    self.pc = self.reg[operand1]
+                else:
+                    # else we increment by 2
+                    self.pc += 2
